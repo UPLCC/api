@@ -5,9 +5,6 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization');
     return res.status(204).end();
   }
-  if (!req.url.startsWith('/mimo')) {
-    return res.status(404).json({ error: 'Not Found' });
-  }
   const { key: K, msg: M, id: uid } = req.query;
   if (!K || !M) {
     return res.status(400).json({ error: '缺少 key 或 msg' });

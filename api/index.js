@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization');
     return res.status(204).end();
   }
-  if (req.url !== '/api/mimo') {
+  if (!req.url.startsWith('/mimo')) {
     return res.status(404).json({ error: 'Not Found' });
   }
   const { key: K, msg: M, id: uid } = req.query;

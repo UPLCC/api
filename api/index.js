@@ -5,9 +5,10 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'content-type, authorization');
     return res.status(204).end();
   }
+
   const { key: K, msg: M, id: uid } = req.query;
   if (!K || !M) {
-    return res.status(400).json({ error: '缺少 key 或 msg' });
+    return res.status(400).json({ code: 400, error: '缺少 key 或 msg' });
   }
   const finalUid = uid || `UPLCCscaAIID${Math.round(Math.random() * 9999999999)}`;
   try {
@@ -31,29 +32,54 @@ export default async function handler(req, res) {
         thinking: { type: 'enabled' },
       }),
     });
-    res.status(upstreamRes.status);
-    ['content-type', 'x-ratelimit-limit', 'x-ratelimit-remaining'].forEach(h => {
-      if (upstreamRes.headers.has(h)) res.setHeader(h, upstreamRes.headers.get(h));
-    });
+
+    const status = upstreamRes.status;
+    const responseText = await upstreamRes.text();
     res.setHeader('Access-Control-Allow-Origin', '*');
+
     if (!upstreamRes.ok) {
-      const text = await upstreamRes.text();
-      return res.status(upstreamRes.status).send(text);
+      res.status(status).send(responseText);
+      return;
     }
 
-    const data = await upstreamRes.json();
-    const choice = data.choices?.[0] || {};
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('JSON解析错误:', parseError, '响应文本:', responseText);
+      res.status(500).json({ code: 500, error: '响应格式错误' });
+      return;
+    }
+
+    if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+      res.status(500).json({ 
+        code: 500,
+        error: 'MiMo返回数据格式错误',
+        detail: data 
+      });
+      return;
+    }
+
+    const choice = data.choices[0];
     const responseA = choice.reasoning_content ?? '';
     const responseB = choice.content ?? '';
 
-    return res.json({
+    const result = {
       code: 200,
       from: 'UPLCC API',
       message: responseB,
       reason: responseA,
-    });
+    };
+
+    res.status(200).json(result);
+
   } catch (e) {
-    console.error(e);
-    return res.status(502).json({ error: 'Upstream error', detail: e.message });
+    console.error('完整错误:', e);
+    res.status(502).json({ 
+      code: 502,
+      error: 'Upstream error', 
+      detail: e.message,
+      stack: process.env.NODE_ENV === 'development' ? e.stack : undefined
+    });
   }
 }

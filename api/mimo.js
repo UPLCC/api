@@ -60,7 +60,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const choice = data.choices[0];
+    const choice = data.choices[0].message;
     const responseA = choice.reasoning_content ?? '';
     const responseB = choice.content ?? '';
 

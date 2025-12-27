@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
   const { key: K, msg: M, id: uid } = req.query;
   if (!K || !M) {
-    return res.status(400).json({ code: 400, error: '缺少 key 或 msg' });
+    return res.status(400).send(JSON.stringify({ code: 400, error: '缺少 key 或 msg' },null,2));
   }
   const finalUid = uid || `UPLCCscaAIID${Math.round(Math.random() * 9999999999)}`;
   try {
@@ -71,15 +71,15 @@ export default async function handler(req, res) {
       reason: responseA,
     };
 
-    res.status(200).json(result);
+    res.status(200).send(JSON.stringify(result,null,2));
 
   } catch (e) {
     console.error('完整错误:', e);
-    res.status(502).json({ 
+    res.status(502).send(JSON.stringify({ 
       code: 502,
       error: 'Upstream error', 
       detail: e.message,
       stack: process.env.NODE_ENV === 'development' ? e.stack : undefined
-    });
+    },null,2));
   }
 }
